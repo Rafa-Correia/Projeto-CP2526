@@ -85,6 +85,7 @@ void spec_set_u( t_species* spec, const int start, const int end )
      */
 
     // Initialize thermal component
+    #pragma omp parallel for
     for (int i = start; i <= end; i++) {
         spec->part[i].ux = spec -> uth[0] * rand_norm();
         spec->part[i].uy = spec -> uth[1] * rand_norm();
@@ -100,6 +101,7 @@ void spec_set_u( t_species* spec, const int start, const int end )
     memset(npc, 0, (spec->nx) * sizeof(int) );
 
     // Accumulate momentum in each cell
+    #pragma omp parallel for
     for (int i = start; i <= end; i++) {
         const int idx  = spec -> part[i].ix;
 
@@ -112,6 +114,7 @@ void spec_set_u( t_species* spec, const int start, const int end )
 
     // Normalize to the number of particles in each cell to get the
     // average momentum in each cell
+    #pragma omp parallel for
     for(int i =0; i< spec->nx; i++ ) {
         const float norm = (npc[ i ] > 0) ? 1.0f/npc[i] : 0;
 
@@ -121,6 +124,7 @@ void spec_set_u( t_species* spec, const int start, const int end )
     }
 
     // Subtract average momentum and add fluid component
+    #pragma omp parallel for
     for (int i = start; i <= end; i++) {
         const int idx  = spec -> part[i].ix;
 
