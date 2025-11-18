@@ -435,6 +435,7 @@ void yee_b( t_emf *emf, const float dt )
 	}
 }
 
+
 /**
  * @brief Advance Electric field using Yee scheme
  * 
@@ -460,6 +461,7 @@ void yee_e( t_emf *emf, const t_current *current, const float dt )
 	}
 
 }
+
 
 /**
  * @brief Updates guard cell values.
@@ -512,7 +514,8 @@ void emf_update_gc( t_emf *emf )
  * 
  * @param emf 
  */
-void emf_move_window( t_emf *emf ){
+
+/* void emf_move_window( t_emf *emf ){
 	if ( ( emf -> iter * emf -> dt ) > emf->dx*( emf -> n_move + 1 ) ) {
 
 	    float3* const restrict E = emf -> E;
@@ -520,7 +523,7 @@ void emf_move_window( t_emf *emf ){
 
 		// Shift data left 1 cell and zero rightmost cells
 
-		#pragma omp parallel for
+		// #pragma omp parallel for
 		for (int i = -emf->gc[0]; i < emf->nx+emf->gc[1] - 1; i++) {
 			E[ i ] = E[ i + 1 ];
 			B[ i ] = B[ i + 1 ];
@@ -536,7 +539,50 @@ void emf_move_window( t_emf *emf ){
 		// Increase moving window counter
 		emf -> n_move++;
 	}
+} */
+
+void emf_move_window( t_emf *emf )
+{
+    if ((emf->iter * emf->dt) > emf->dx * (emf->n_move + 1)) {
+
+        const int ncells = emf->nx + emf->gc[0] + emf->gc[1];
+        const int offset = emf->gc[0];
+
+        float3* const restrict E = emf->E;
+        float3* const restrict B = emf->B;
+
+        // --- buffers temporários (stack OK, n ~ 10000, sizeof float3 = 12B) ---
+        float3* tmpE = malloc(ncells * sizeof(float3));
+        float3* tmpB = malloc(ncells * sizeof(float3));
+
+        // 1. Copiar para buffer
+        #pragma omp parallel for
+        for(int i = -emf->gc[0]; i < emf->nx + emf->gc[1]; i++) {
+            tmpE[i + offset] = E[i + 1];
+            tmpB[i + offset] = B[i + 1];
+        }
+
+        // 2. Copiar buffer para E e B
+        #pragma omp parallel for
+        for(int i = -emf->gc[0]; i < emf->nx + emf->gc[1]; i++) {
+            E[i] = tmpE[i + offset];
+            B[i] = tmpB[i + offset];
+        }
+
+        free(tmpE);
+        free(tmpB);
+
+        const float3 zero_fld = {0.,0.,0.};
+        #pragma omp parallel for
+        for(int i = emf->nx - 1; i < emf->nx + emf->gc[1]; i ++) {
+            E[i] = zero_fld;
+            B[i] = zero_fld;
+        }
+
+        emf->n_move++;
+    }
 }
+
 
 /**
  * @brief Advance EM fields 1 timestep
