@@ -32,11 +32,11 @@ DOXYFILE = $(SRC_FOLDER)/Doxyfile
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
-	@echo "Compiling $(TARGET)..."
-	$(CC) $(CFLAGS) $(OBJECTS) $(LDFLAGS) -o $@
+	@$(CC) $(CFLAGS) $(OBJECTS) $(LDFLAGS) -o $@
+	@echo -e "$(TARGET) compiled with:\n\tCC: $(CC)\n\tCFLAGS: $(CFLAGS)\n"
 
 $(TMP_FOLDER)/%.o: $(SRC_FOLDER)/%.c | $(TMP_FOLDER)
-	$(CC) -c $(CFLAGS) -o $@ $<
+	@$(CC) -c $(CFLAGS) -o $@ $<
 
 $(TMP_FOLDER):
 	@mkdir -p $(TMP_FOLDER)
@@ -59,3 +59,7 @@ clean:
 	@rm -rf $(TMP_FOLDER)
 	@rm -rf $(TMP_SCOREP)
 	@rm -rf $(DOCSBASE)
+	@echo -e "Cleaned everything up!\n"
+
+re: clean all
+rep: clean scorep

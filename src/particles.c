@@ -85,13 +85,8 @@ void spec_set_u( t_species* spec, const int start, const int end )
      */
 
     // Initialize thermal component
-    for (int i = start; i <= end; i++) {
-        spec->part[i].ux = spec -> uth[0] * rand_norm();
-        spec->part[i].uy = spec -> uth[1] * rand_norm();
-        spec->part[i].uz = spec -> uth[2] * rand_norm();
-    }
-
-    // Calculate net momentum in each cell
+    // 
+    // // Calculate net momentum in each cell
     float3 * restrict net_u = (float3 *) malloc( spec->nx * sizeof(float3));
     int * restrict    npc   = (int *) malloc( spec->nx * sizeof(int));
 
@@ -99,8 +94,14 @@ void spec_set_u( t_species* spec, const int start, const int end )
     memset(net_u, 0, spec->nx * sizeof(float3) );
     memset(npc, 0, (spec->nx) * sizeof(int) );
 
-    // Accumulate momentum in each cell
+    #pragma omp parallel for
     for (int i = start; i <= end; i++) {
+        spec->part[i].ux = spec -> uth[0] * rand_norm();
+        spec->part[i].uy = spec -> uth[1] * rand_norm();
+        spec->part[i].uz = spec -> uth[2] * rand_norm();
+        
+        //anything after this comment was previosly in another for loop
+        // Accumulate momentum in each cell
         const int idx  = spec -> part[i].ix;
 
         net_u[ idx ].x += spec->part[i].ux;
@@ -110,8 +111,22 @@ void spec_set_u( t_species* spec, const int start, const int end )
         npc[ idx ] += 1;
     }
 
+    /*
+    #pragma omp parallel for
+    for (int i = start; i <= end; i++) {
+        const int idx  = spec -> part[i].ix;
+
+        net_u[ idx ].x += spec->part[i].ux;
+        net_u[ idx ].y += spec->part[i].uy;
+        net_u[ idx ].z += spec->part[i].uz;
+
+        npc[ idx ] += 1;
+    }
+    */
+    
     // Normalize to the number of particles in each cell to get the
     // average momentum in each cell
+    #pragma omp parallel for
     for(int i =0; i< spec->nx; i++ ) {
         const float norm = (npc[ i ] > 0) ? 1.0f/npc[i] : 0;
 
@@ -121,6 +136,7 @@ void spec_set_u( t_species* spec, const int start, const int end )
     }
 
     // Subtract average momentum and add fluid component
+    #pragma omp parallel for
     for (int i = start; i <= end; i++) {
         const int idx  = spec -> part[i].ix;
 

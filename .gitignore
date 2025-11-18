@@ -1,0 +1,9 @@
+# Ignore output folder
+output/
+
+# Ignore make outputs if they're not cleaned
+tmp/
+zpic
+
+# Ignore scorep results folders if not removed
+scorep-*/
