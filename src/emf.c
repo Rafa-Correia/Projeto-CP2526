@@ -556,14 +556,14 @@ void emf_move_window( t_emf *emf )
         float3* tmpB = malloc(ncells * sizeof(float3));
 
         // 1. Copiar para buffer
-        #pragma omp parallel for
+        // #pragma omp parallel for
         for(int i = -emf->gc[0]; i < emf->nx + emf->gc[1]; i++) {
             tmpE[i + offset] = E[i + 1];
             tmpB[i + offset] = B[i + 1];
         }
 
         // 2. Copiar buffer para E e B
-        #pragma omp parallel for
+        // #pragma omp parallel for
         for(int i = -emf->gc[0]; i < emf->nx + emf->gc[1]; i++) {
             E[i] = tmpE[i + offset];
             B[i] = tmpB[i + offset];
@@ -573,7 +573,7 @@ void emf_move_window( t_emf *emf )
         free(tmpB);
 
         const float3 zero_fld = {0.,0.,0.};
-        #pragma omp parallel for
+        // #pragma omp parallel for
         for(int i = emf->nx - 1; i < emf->nx + emf->gc[1]; i ++) {
             E[i] = zero_fld;
             B[i] = zero_fld;

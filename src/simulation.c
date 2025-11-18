@@ -43,16 +43,19 @@ int report( int n, int ndump )
  * @param sim 	EM1D Simulation
  */
 void sim_iter( t_simulation* sim ) {
-	// Advance particles and deposit current
-	current_zero( &sim -> current );
-	for (int i = 0; i<sim -> n_species; i++)
-		spec_advance(&sim -> species[i], &sim -> emf, &sim -> current );
-
-	// Update current boundary conditions and advance iteration
-	current_update( &sim -> current );
-
-	// Advance EM fields
-	emf_advance( &sim -> emf, &sim -> current );
+	// #pragma omp parallel 
+	{
+		// Advance particles and deposit current
+		current_zero( &sim -> current );
+		for (int i = 0; i<sim -> n_species; i++)
+			spec_advance(&sim -> species[i], &sim -> emf, &sim -> current );
+		
+		// Update current boundary conditions and advance iteration
+		current_update( &sim -> current );
+		
+		// Advance EM fields
+		emf_advance( &sim -> emf, &sim -> current );
+	}
 }
 
 /**

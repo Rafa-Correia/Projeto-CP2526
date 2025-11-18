@@ -55,9 +55,7 @@ $(DOCS):
 	@doxygen $(DOXYFILE)
 
 clean:
-	@echo "Cleaning..."
 	@rm -f $(TARGET)
 	@rm -rf $(TMP_FOLDER)
 	@rm -rf $(TMP_SCOREP)
 	@rm -rf $(DOCSBASE)
-	@echo "Done!"
