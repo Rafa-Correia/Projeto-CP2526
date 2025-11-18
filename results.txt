@@ -1,0 +1,18 @@
+All times are measured using 'time' -> 'real'.
+
+Baseline, no scoreP, no OpenMP.
+  Time: 1m16.302s 
+
+No ScoreP, OpenMP 24 threads at commit 25c7321:
+  Time: 1m06.091s
+
+No ScoreP, OpenMP 12 threads at commit 25c7321:
+  Time: 1m26.730s
+
+No ScoreP, OpenMP  6 threads at commit 25c7321:
+  Time: 2m21.332s
+
+
+Time grows larger with few threads, implying BARRIERS!
+Solution: idk
+

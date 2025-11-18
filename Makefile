@@ -1,6 +1,6 @@
 # GCC options
-CC = scorep gcc # original -> gcc
-CFLAGS = -Ofast -g -std=c99 -fopenmp # -pedantic -Wall    <-- pedantic and Wall have been left out so we dont have 5000 warnings, if necessary, just enable again
+CC = gcc
+CFLAGS = -Ofast -g -std=c99 -fopenmp -w # -pedantic -Wall    <-- pedantic and Wall have been left out so we dont have 5000 warnings, if necessary, just enable again and remove -w
 #CFLAGS = -Kfast -std=c99 
 LDFLAGS = -lm
 
@@ -33,11 +33,10 @@ all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
 	@echo "Compiling $(TARGET)..."
-	@$(CC) $(CFLAGS) $(OBJECTS) $(LDFLAGS) -o $@
-	@echo "Done!"	
+	$(CC) $(CFLAGS) $(OBJECTS) $(LDFLAGS) -o $@
 
 $(TMP_FOLDER)/%.o: $(SRC_FOLDER)/%.c | $(TMP_FOLDER)
-	@$(CC) -c $(CFLAGS) -o $@ $<
+	$(CC) -c $(CFLAGS) -o $@ $<
 
 $(TMP_FOLDER):
 	@mkdir -p $(TMP_FOLDER)
@@ -46,6 +45,9 @@ OMP_NUM_THREADS ?= 4 # if not set, then set variable to 4
 export OMP_NUM_THREADS
 run: all
 	@./$(TARGET)
+
+scorep: CC = scorep gcc
+scorep: all
 
 docs: $(DOCS)
 
@@ -56,5 +58,6 @@ clean:
 	@echo "Cleaning..."
 	@rm -f $(TARGET)
 	@rm -rf $(TMP_FOLDER)
+	@rm -rf $(TMP_SCOREP)
 	@rm -rf $(DOCSBASE)
 	@echo "Done!"
