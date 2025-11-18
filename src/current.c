@@ -164,7 +164,7 @@ void current_update( t_current *current )
  * @param current Electric current object
  * @param jc Current component to save, must be one of {0,1,2}
  */
-void current_report( const t_current *current, const int jc )
+/* void current_report( const t_current *current, const int jc )
 {
 	if ( jc < 0 || jc > 2 ) {
 		fprintf(stderr, "(*error*) Invalid current component (jc) selected, returning\n");
@@ -227,7 +227,65 @@ void current_report( const t_current *current, const int jc )
     };
 
     zdf_save_grid( (void *) buf, zdf_float32, &info, &iter, "CURRENT" );
+} */
+
+void current_report( const t_current *current, const int jc )
+{
+    if ( jc < 0 || jc > 2 ) {
+        fprintf(stderr, "(*error*) Invalid current component (jc) selected, returning\n");
+        return;
+    }
+
+    // Pack the information
+    float buf[current->nx];
+    float3 *f = current->J;
+
+    // Paralelizar loop de cópia
+    #pragma omp parallel for
+    for ( int i = 0; i < current->nx; i++ ) {
+        switch (jc) {
+            case 0: buf[i] = f[i].x; break;
+            case 1: buf[i] = f[i].y; break;
+            case 2: buf[i] = f[i].z; break;
+        }
+    }
+
+    char vfname[16];    // Dataset name
+    char vflabel[16];   // Dataset label (for plots)
+
+    snprintf( vfname, 3, "J%1u", jc );
+    char comp[] = {'x','y','z'};
+    snprintf(vflabel,4,"J_%c",comp[jc]);
+
+    t_zdf_grid_axis axis[1];
+    axis[0] = (t_zdf_grid_axis) {
+        .min = 0.0,
+        .max = current->box,
+        .name = "x",
+        .label = "x",
+        .units = "c/\\omega_p"
+    };
+
+    t_zdf_grid_info info = {
+        .ndims = 1,
+        .name = vfname,
+        .label = vflabel,
+        .units = "e \\omega_p^2 / c",
+        .axis = axis
+    };
+
+    info.count[0] = current->nx;
+
+    t_zdf_iteration iter = {
+        .name = "ITERATION",
+        .n = current->iter,
+        .t = current -> iter * current -> dt,
+        .time_units = "1/\\omega_p"
+    };
+
+    zdf_save_grid( (void *) buf, zdf_float32, &info, &iter, "CURRENT" );
 }
+
 
 /**
  * @brief Gets the value of the compensator kernel for an n pass binomial kernel
@@ -262,7 +320,7 @@ void get_smooth_comp( int n, float* sa, float* sb) {
  * @param sa kernel a value
  * @param sb kernel b value
  */
-void kernel_x( t_current* const current, const float sa, const float sb ){
+/* void kernel_x( t_current* const current, const float sa, const float sb ){
 
     float3* restrict const J = current -> J;
 
@@ -296,7 +354,43 @@ void kernel_x( t_current* const current, const float sa, const float sb ){
     }
 
 
+} */
+
+void kernel_x(t_current* const current, const float sa, const float sb)
+{
+    float3* restrict const J = current->J;
+    const int nx = current->nx;
+
+    // array auxiliar
+    float3* Jnew = malloc((nx + current->gc[0] + current->gc[1]) * sizeof(float3));
+    float3* Jtemp = Jnew + current->gc[0];
+
+    // paralelo sem dependências
+    #pragma omp parallel for
+    for (int i = 0; i < nx; i++) {
+        float3 fl = J[i - 1];
+        float3 f0 = J[i];
+        float3 fu = J[i + 1];
+
+        Jtemp[i].x = sa * fl.x + sb * f0.x + sa * fu.x;
+        Jtemp[i].y = sa * fl.y + sb * f0.y + sa * fu.y;
+        Jtemp[i].z = sa * fl.z + sb * f0.z + sa * fu.z;
+    }
+
+    // copiar resultado para J
+    memcpy(J - current->gc[0], Jnew, (nx + current->gc[0] + current->gc[1])*sizeof(float3));
+
+    free(Jnew);
+
+    // atualizar fronteiras (sequencial)
+    if (current->bc_type == CURRENT_BC_PERIODIC) {
+        for (int i = -current->gc[0]; i < 0; i++)
+            J[i] = J[nx + i];
+        for (int i = 0; i < current->gc[1]; i++)
+            J[nx + i] = J[i];
+    }
 }
+
 
 /**
  * @brief Applies digital filtering to the current density
