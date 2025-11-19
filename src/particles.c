@@ -87,12 +87,12 @@ void spec_set_u( t_species* spec, const int start, const int end )
     // Initialize thermal component
     // 
     // // Calculate net momentum in each cell
-    float3 * restrict net_u = (float3 *) malloc( spec->nx * sizeof(float3));
-    int * restrict    npc   = (int *) malloc( spec->nx * sizeof(int));
+    float3 * restrict net_u = (float3 *) calloc( spec->nx, sizeof(float3)); 
+    int * restrict    npc   = (int *) calloc( spec->nx, sizeof(int));       
 
     // Zero momentum grids
-    memset(net_u, 0, spec->nx * sizeof(float3) );
-    memset(npc, 0, (spec->nx) * sizeof(int) );
+    //memset(net_u, 0, spec->nx * sizeof(float3) );
+    //memset(npc, 0, (spec->nx) * sizeof(int) );
 
     #pragma omp parallel for
     for (int i = start; i <= end; i++) {

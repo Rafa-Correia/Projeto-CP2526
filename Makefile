@@ -33,7 +33,7 @@ all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
 	@$(CC) $(CFLAGS) $(OBJECTS) $(LDFLAGS) -o $@
-	@echo -e "$(TARGET) compiled with:\n\tCC: $(CC)\n\tCFLAGS: $(CFLAGS)\n"
+	@echo -e "\n$(TARGET) compiled with:\n\tCC: $(CC)\n\tCFLAGS: $(CFLAGS)\n"
 
 $(TMP_FOLDER)/%.o: $(SRC_FOLDER)/%.c | $(TMP_FOLDER)
 	@$(CC) -c $(CFLAGS) -o $@ $<
@@ -41,7 +41,7 @@ $(TMP_FOLDER)/%.o: $(SRC_FOLDER)/%.c | $(TMP_FOLDER)
 $(TMP_FOLDER):
 	@mkdir -p $(TMP_FOLDER)
 
-OMP_NUM_THREADS ?= 4 # if not set, then set variable to 4
+OMP_NUM_THREADS ?= 16 # if not set, then set variable to 4
 export OMP_NUM_THREADS
 run: all
 	@./$(TARGET)
@@ -59,7 +59,7 @@ clean:
 	@rm -rf $(TMP_FOLDER)
 	@rm -rf $(TMP_SCOREP)
 	@rm -rf $(DOCSBASE)
-	@echo -e "Cleaned everything up!\n"
+	@echo "Cleaning..."
 
 re: clean all
 rep: clean scorep

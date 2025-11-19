@@ -38,8 +38,10 @@ void current_new( t_current *current, int nx, float box, float dt )
     
     size = gc[0] + nx + gc[1];
     
-    current->J_buf = malloc( size * sizeof( float3 ) );
+    current->J_buf     = malloc( size * sizeof( float3 ) );
+    current->J_buf_cpy = malloc( size * sizeof( float3 ) );
     assert( current->J_buf );
+    assert( current->J_buf_cpy );
 
     // store nx and gc values
     current->nx = nx;
@@ -47,7 +49,8 @@ void current_new( t_current *current, int nx, float box, float dt )
     current->gc[1] = gc[1];
     
     // Make J point to cell [0]
-    current->J = current->J_buf + gc[0];
+    current->J     = current->J_buf + gc[0];
+    current->J_cpy = current->J_buf_cpy + gc[0];
     
     // Set cell sizes and box limits
     current -> box = box;
@@ -80,9 +83,10 @@ void current_new( t_current *current, int nx, float box, float dt )
 void current_delete( t_current *current )
 {
     free( current->J_buf );
+    free( current->J_buf_cpy );
     
     current->J_buf = NULL;
-    
+    current->J_buf_cpy = NULL;
 }
 
 /**
@@ -96,6 +100,7 @@ void current_zero( t_current *current )
     size_t size;
     
     size = (current->gc[0] + current->nx + current->gc[1]) * sizeof( float3 );
+    memset( current->J_buf, 0, size );
     memset( current->J_buf, 0, size );
     
 }
@@ -358,7 +363,7 @@ void get_smooth_comp( int n, float* sa, float* sb) {
 
 void kernel_x(t_current* const current, const float sa, const float sb)
 {
-    float3* restrict const J = current->J;
+    /* float3* restrict const J = current->J;
     const int nx = current->nx;
 
     // array auxiliar
@@ -388,6 +393,38 @@ void kernel_x(t_current* const current, const float sa, const float sb)
             J[i] = J[nx + i];
         for (int i = 0; i < current->gc[1]; i++)
             J[nx + i] = J[i];
+    } */
+    
+    float3* restrict J     = current -> J;
+    float3* restrict J_cpy = current -> J_cpy;
+    float3* tmp;
+
+    tmp = J;
+    J = J_cpy;
+    J_cpy = tmp;
+
+    float3 fl = J_cpy[-1];
+    float3 f0 = J_cpy[ 0];
+
+    #pragma omp parallel for
+    for( int i = 0; i < current -> nx; i++) {
+        float3 fl = J_cpy[i - 1];
+        float3 f0 = J_cpy[i];
+        float3 fu = J_cpy[i + 1];
+
+        J[i].x = sa * fl.x + sb * f0.x + sa * fu.x;
+        J[i].y = sa * fl.y + sb * f0.y + sa * fu.y;
+        J[i].z = sa * fl.z + sb * f0.z + sa * fu.z;
+    }
+
+    // Update x boundaries for periodic boundaries
+
+    if ( current -> bc_type == CURRENT_BC_PERIODIC ) {
+        for(int i = -current->gc[0]; i<0; i++)
+            J[ i ] = J[ current->nx + i ];
+
+        for (int i=0; i<current->gc[1]; i++)
+            J[ current->nx + i ] = J[ i ];
     }
 }
 

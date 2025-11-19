@@ -550,8 +550,7 @@ void emf_move_window( t_emf *emf )
 
         float3* const restrict E = emf->E;
         float3* const restrict B = emf->B;
-
-        // --- buffers temporários (stack OK, n ~ 10000, sizeof float3 = 12B) ---
+		
         float3* tmpE = malloc(ncells * sizeof(float3));
         float3* tmpB = malloc(ncells * sizeof(float3));
 
