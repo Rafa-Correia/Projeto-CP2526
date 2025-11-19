@@ -1,8 +1,8 @@
 # GCC options
-CC = gcc
-CFLAGS = -Ofast -g -std=c99 -fopenmp -w # -pedantic -Wall    <-- pedantic and Wall have been left out so we dont have 5000 warnings, if necessary, just enable again and remove -w
+#CC = gcc
+#CFLAGS = -Ofast -std=c99 -fopenmp -march=native -funroll-loops -fbranch-probabilities -flto -g -w # -pedantic -Wall  #  <-- pedantic and Wall have been left out so we dont have 5000 warnings, if necessary, just enable again and remove -w
 #CFLAGS = -Kfast -std=c99 
-LDFLAGS = -lm
+#LDFLAGS = -lm
 
 #Debug options
 #CFLAGS = -g -Og -std=c99 -pedantic -fsanitize=undefined -fsanitize=address
@@ -13,9 +13,9 @@ LDFLAGS = -lm
 #LDFLAGS =
 
 # Clang options
-#CC = clang
-#CFLAGS = -Ofast -std=c99 -pedantic
-#LDFLAGS = -lm
+CC = clang
+CFLAGS = -Ofast -std=c99 -fopenmp -march=native -funroll-loops -g -w # -flto -pedantic -Wall  #  <-- pedantic and Wall have been left out so we dont have 5000 warnings, if necessary, just enable again and remove -w
+LDFLAGS = -lm
 
 SRC_FOLDER = src
 TMP_FOLDER = tmp
@@ -41,13 +41,10 @@ $(TMP_FOLDER)/%.o: $(SRC_FOLDER)/%.c | $(TMP_FOLDER)
 $(TMP_FOLDER):
 	@mkdir -p $(TMP_FOLDER)
 
-OMP_NUM_THREADS ?= 16 # if not set, then set variable to 4
+OMP_NUM_THREADS ?= 24 # minimum I found was 24!
 export OMP_NUM_THREADS
 run: all
 	@./$(TARGET)
-
-scorep: CC = scorep gcc
-scorep: all
 
 docs: $(DOCS)
 
@@ -61,5 +58,16 @@ clean:
 	@rm -rf $(DOCSBASE)
 	@echo "Cleaning..."
 
+
+# Custom targets!
+scorep: CC := scorep gcc
+scorep: all
+
+scorepr: CC := scorep gcc
+scorepr: run
+
 re: clean all
 rep: clean scorep
+
+rer: clean run 
+repr: clean scorepr
